@@ -1,0 +1,31 @@
+{
+  "name": "community-project",
+  "version": "1.0.0",
+  "description": "Instagram-style social media app with posts, images, and videos",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "social-media",
+    "instagram-clone",
+    "node",
+    "express",
+    "supabase"
+  ],
+  "author": "fabby",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

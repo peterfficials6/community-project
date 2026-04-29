@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aura — Social</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1c1c28;
+    --surface3: #242434;
+    --border: #2a2a3e;
+    --accent: #c084fc;
+    --accent2: #f0abfc;
+    --gold: #fbbf24;
+    --text: #f1f0ff;
+    --muted: #8b8aa8;
+    --danger: #f87171;
+    --success: #34d399;
+    --gradient: linear-gradient(135deg, #c084fc, #f0abfc, #a78bfa);
+    --glow: 0 0 40px rgba(192,132,252,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; overflow:hidden; }
+
+  /* AUTH */
+  #auth-screen {
+    position:fixed; inset:0; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; z-index:1000;
+    background-image: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(192,132,252,0.15), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 120%, rgba(167,139,250,0.1), transparent);
+  }
+  #auth-screen.hidden { display:none; }
+  .auth-box {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:24px; padding:48px 40px; width:420px; max-width:95vw;
+    box-shadow: var(--glow), 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .auth-logo {
+    font-family:'DM Serif Display',serif; font-size:38px;
+    background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; text-align:center; margin-bottom:6px;
+  }
+  .auth-tagline { text-align:center; color:var(--muted); font-size:13px; margin-bottom:32px; letter-spacing:.05em; }
+  .auth-tabs { display:flex; gap:2px; background:var(--surface2); border-radius:12px; padding:3px; margin-bottom:28px; }
+  .auth-tab {
+    flex:1; padding:9px; border-radius:10px; border:none; cursor:pointer;
+    font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500;
+    background:transparent; color:var(--muted); transition:all .2s;
+  }
+  .auth-tab.active { background:var(--surface3); color:var(--text); }
+  .auth-form { display:flex; flex-direction:column; gap:14px; }
+  .auth-form.hidden { display:none; }
+  .field-group { display:flex; flex-direction:column; gap:6px; }
+  .field-group label { font-size:12px; font-weight:500; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; }
+  .field-group input {
+    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+    outline:none; transition:border-color .2s;
+  }
+  .field-group input:focus { border-color:var(--accent); }
+  .btn-primary {
+    background:var(--gradient); border:none; border-radius:10px;
+    padding:12px; color:#fff; font-family:'DM Sans',sans-serif; font-size:15px;
+    font-weight:600; cursor:pointer; transition:opacity .2s, transform .1s; margin-top:4px;
+  }
+  .btn-primary:hover { opacity:.9; }
+  .btn-primary:active { transform:scale(.98); }
+  .auth-error { color:var(--danger); font-size:13px; text-align:center; min-height:18px; }
+
+  /* MAIN APP */
+  #app { display:flex; height:100vh; opacity:0; transition:opacity .4s; }
+  #app.visible { opacity:1; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width:240px; background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:20px 0; flex-shrink:0;
+    background-image: radial-gradient(ellipse 100% 40% at 50% 0%, rgba(192,132,252,0.06), transparent);
+  }
+  .sidebar-logo {
+    font-family:'DM Serif Display',serif; font-size:26px; padding:8px 24px 24px;
+    background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding:11px 24px;
+    cursor:pointer; color:var(--muted); font-size:14px; font-weight:500;
+    border-left:2px solid transparent; transition:all .2s;
+  }
+  .nav-item:hover { color:var(--text); background:rgba(192,132,252,0.05); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(192,132,252,0.08); }
+  .nav-item .icon { font-size:18px; width:22px; text-align:center; }
+  .nav-item .badge {
+    margin-left:auto; background:var(--accent); color:#fff; font-size:11px;
+    font-weight:700; border-radius:999px; padding:2px 7px; min-width:18px; text-align:center;
+  }
+  .nav-bottom { margin-top:auto; padding:16px 24px; border-top:1px solid var(--border); }
+  .user-chip {
+    display:flex; align-items:center; gap:10px; cursor:pointer;
+    padding:8px 10px; border-radius:12px; transition:background .2s;
+  }
+  .user-chip:hover { background:var(--surface2); }
+  .avatar {
+    width:36px; height:36px; border-radius:50%; object-fit:cover;
+    background:var(--gradient); display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:14px; flex-shrink:0; overflow:hidden;
+  }
+  .avatar.sm { width:28px; height:28px; font-size:11px; }
+  .avatar.lg { width:52px; height:52px; font-size:20px; }
+  .avatar.xl { width:80px; height:80px; font-size:28px; }
+  .user-info .name { font-size:13px; font-weight:600; color:var(--text); }
+  .user-info .handle { font-size:11px; color:var(--muted); }
+  .logout-btn { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; margin-left:auto; transition:color .2s; }
+  .logout-btn:hover { color:var(--danger); }
+
+  /* MAIN */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .page { display:none; flex:1; overflow-y:auto; }
+  .page.active { display:flex; flex-direction:column; }
+  .page::-webkit-scrollbar { width:4px; }
+  .page::-webkit-scrollbar-track { background:transparent; }
+  .page::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* FEED */
+  .feed-layout { display:flex; height:100%; }
+  .feed-center { flex:1; max-width:600px; padding:24px; overflow-y:auto; }
+  .feed-center::-webkit-scrollbar { width:4px; }
+  .feed-center::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .feed-right { width:280px; padding:24px 20px; overflow-y:auto; flex-shrink:0; border-left:1px solid var(--border); }
+
+  /* STORIES */
+  .stories-row { display:flex; gap:12px; margin-bottom:24px; overflow-x:auto; padding-bottom:4px; }
+  .stories-row::-webkit-scrollbar { height:0; }
+  .story-bubble { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; flex-shrink:0; }
+  .story-ring { width:62px; height:62px; border-radius:50%; padding:2.5px; background:var(--gradient); transition:transform .2s; }
+  .story-ring:hover { transform:scale(1.05); }
+  .story-ring.seen { background:var(--surface3); }
+  .story-inner {
+    width:100%; height:100%; border-radius:50%; background:var(--surface2);
+    border:2px solid var(--bg); overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:18px; color:#fff;
+  }
+  .story-add-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; }
+  .story-add-btn {
+    width:62px; height:62px; border-radius:50%;
+    background:var(--surface2); border:2px dashed var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; color:var(--accent); cursor:pointer;
+    transition:all .2s;
+  }
+  .story-add-btn:hover { border-color:var(--accent); background:rgba(192,132,252,0.08); }
+  .story-label { font-size:11px; color:var(--muted); white-space:nowrap; max-width:64px; overflow:hidden; text-overflow:ellipsis; text-align:center; }
+
+  /* CREATE POST */
+  .create-post { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:20px; }
+  .create-post-top { display:flex; gap:12px; align-items:flex-start; }
+  .create-post-input {
+    flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+    padding:12px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+    resize:none; outline:none; min-height:48px; transition:border-color .2s, min-height .2s;
+  }
+  .create-post-input:focus { border-color:var(--accent); min-height:80px; }
+  .create-post-actions { display:flex; gap:8px; margin-top:12px; margin-left:48px; align-items:center; }
+  .icon-btn {
+    background:none; border:1px solid var(--border); border-radius:8px;
+    padding:7px 12px; color:var(--muted); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition:all .2s; font-family:'DM Sans',sans-serif;
+  }
+  .icon-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .post-btn { margin-left:auto; padding:8px 20px; font-size:13px; font-weight:600; }
+
+  /* POSTS */
+  .post-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; transition:border-color .2s; }
+  .post-card:hover { border-color:var(--surface3); }
+  .post-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .post-meta { flex:1; }
+  .post-meta .name { font-size:14px; font-weight:600; }
+  .post-meta .time { font-size:11px; color:var(--muted); }
+  .post-content { font-size:14px; line-height:1.6; margin-bottom:14px; }
+  .post-actions { display:flex; gap:4px; flex-wrap:wrap; }
+  .post-action-btn {
+    background:none; border:none; color:var(--muted); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; gap:5px; padding:6px 10px; border-radius:8px;
+    transition:all .2s; font-family:'DM Sans',sans-serif;
+  }
+  .post-action-btn:hover { background:rgba(192,132,252,0.08); color:var(--accent); }
+  .post-action-btn.liked { color:var(--danger); }
+
+  /* COMMENTS */
+  .comments-section { border-top:1px solid var(--border); margin-top:14px; padding-top:14px; display:none; }
+  .comments-section.open { display:block; }
+  .comment-item { display:flex; gap:9px; margin-bottom:12px; }
+  .comment-content { background:var(--surface2); border-radius:10px; padding:9px 12px; flex:1; }
+  .comment-author { font-size:12px; font-weight:600; margin-bottom:3px; }
+  .comment-text { font-size:13px; color:var(--muted); }
+  .comment-input-row { display:flex; gap:8px; margin-top:12px; }
+  .comment-input {
+    flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    padding:8px 12px; color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif;
+    outline:none; transition:border-color .2s;
+  }
+  .comment-input:focus { border-color:var(--accent); }
+  .comment-submit {
+    background:rgba(192,132,252,0.15); border:1px solid var(--accent); border-radius:8px;
+    padding:8px 14px; color:var(--accent); font-size:13px; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:all .2s;
+  }
+  .comment-submit:hover { background:rgba(192,132,252,0.25); }
+
+  /* SIDEBAR RIGHT */
+  .suggestions-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+  .suggestions-title { font-size:13px; font-weight:600; color:var(--muted); margin-bottom:14px; text-transform:uppercase; letter-spacing:.06em; }
+  .suggest-item { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .suggest-info { flex:1; }
+  .suggest-info .name { font-size:13px; font-weight:600; }
+  .suggest-info .bio { font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px; }
+  .follow-btn {
+    background:rgba(192,132,252,0.12); border:1px solid rgba(192,132,252,0.3); border-radius:8px;
+    padding:5px 12px; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:all .2s;
+  }
+  .follow-btn:hover { background:rgba(192,132,252,0.25); }
+  .follow-btn.following { background:var(--surface3); border-color:var(--border); color:var(--muted); }
+
+  /* MESSAGES */
+  .messages-layout { display:flex; height:100%; }
+  .convo-list { width:280px; border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+  .convo-list-header { padding:20px; font-size:18px; font-weight:700; border-bottom:1px solid var(--border); font-family:'DM Serif Display',serif; }
+  .convo-items { overflow-y:auto; flex:1; }
+  .convo-item {
+    display:flex; align-items:center; gap:12px; padding:14px 20px;
+    cursor:pointer; transition:background .2s; border-bottom:1px solid rgba(42,42,62,.4);
+  }
+  .convo-item:hover, .convo-item.active { background:rgba(192,132,252,0.06); }
+  .convo-item .name { font-size:14px; font-weight:600; }
+  .convo-item .preview { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+  .convo-item .time { font-size:11px; color:var(--muted); margin-left:auto; flex-shrink:0; }
+  .convo-unread { width:8px; height:8px; background:var(--accent); border-radius:50%; flex-shrink:0; }
+  .chat-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); gap:12px; }
+  .chat-empty .icon { font-size:48px; opacity:.3; }
+  .chat-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .msg-bubble { max-width:68%; }
+  .msg-bubble.mine { align-self:flex-end; }
+  .msg-bubble .bubble-inner { padding:10px 14px; border-radius:16px; font-size:14px; line-height:1.5; background:var(--surface2); color:var(--text); }
+  .msg-bubble.mine .bubble-inner { background:linear-gradient(135deg, #7c3aed, #c084fc); color:#fff; }
+  .msg-bubble .bubble-time { font-size:10px; color:var(--muted); margin-top:3px; text-align:right; }
+  .chat-input-area { padding:16px 20px; border-top:1px solid var(--border); display:flex; gap:10px; align-items:center; flex-shrink:0; }
+  .chat-input {
+    flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:24px;
+    padding:10px 16px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+    outline:none; transition:border-color .2s;
+  }
+  .chat-input:focus { border-color:var(--accent); }
+  .send-btn {
+    width:40px; height:40px; border-radius:50%; background:var(--gradient);
+    border:none; color:#fff; font-size:16px; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; transition:transform .2s; flex-shrink:0;
+  }
+  .send-btn:hover { transform:scale(1.08); }
+
+  /* EXPLORE */
+  .explore-wrap { padding:24px; max-width:700px; margin:0 auto; width:100%; }
+  .search-bar {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:12px 18px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:15px;
+    outline:none; width:100%; margin-bottom:24px; transition:border-color .2s;
+  }
+  .search-bar:focus { border-color:var(--accent); }
+  .user-result {
+    display:flex; align-items:center; gap:12px; padding:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    margin-bottom:10px; transition:border-color .2s;
+  }
+  .user-result:hover { border-color:var(--accent); }
+  .user-result .info .name { font-size:15px; font-weight:600; }
+  .user-result .info .handle { font-size:13px; color:var(--muted); }
+
+  /* NOTIFICATIONS */
+  .notif-wrap { padding:24px; max-width:600px; margin:0 auto; width:100%; }
+  .notif-item {
+    display:flex; align-items:center; gap:12px; padding:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    margin-bottom:8px; transition:border-color .2s;
+  }
+  .notif-item:hover { border-color:var(--surface3); }
+  .notif-icon { width:38px; height:38px; border-radius:50%; background:rgba(192,132,252,0.12); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .notif-text { font-size:14px; flex:1; }
+  .notif-text .bold { font-weight:600; }
+  .notif-time { font-size:11px; color:var(--muted); flex-shrink:0; }
+
+  /* PROFILE */
+  .profile-wrap { padding:32px 24px; max-width:680px; margin:0 auto; width:100%; }
+  .profile-header { display:flex; align-items:flex-start; gap:24px; margin-bottom:32px; }
+  .profile-info .uname { font-size:24px; font-weight:700; font-family:'DM Serif Display',serif; }
+  .profile-info .handle { color:var(--muted); font-size:14px; margin-bottom:10px; }
+  .profile-info .bio { font-size:14px; color:var(--muted); line-height:1.5; max-width:320px; margin-bottom:16px; }
+  .profile-stats { display:flex; gap:24px; }
+  .stat { text-align:center; }
+  .stat .n { font-size:20px; font-weight:700; font-family:'DM Serif Display',serif; }
+  .stat .l { font-size:12px; color:var(--muted); }
+  .profile-posts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px; margin-top:24px; }
+  .profile-post-tile {
+    aspect-ratio:1; background:var(--surface2); border-radius:4px;
+    display:flex; align-items:center; justify-content:center; font-size:28px;
+    cursor:pointer; transition:opacity .2s; position:relative;
+  }
+  .profile-post-tile:hover { opacity:.75; }
+  .edit-profile-btn {
+    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    padding:8px 18px; color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; transition:border-color .2s;
+  }
+  .edit-profile-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* STORY MODAL */
+  .story-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:500; align-items:center; justify-content:center; }
+  .story-modal.open { display:flex; }
+  .story-view {
+    width:380px; height:620px; max-height:90vh;
+    border-radius:20px; overflow:hidden; position:relative;
+    background:var(--gradient); display:flex; flex-direction:column;
+  }
+  .story-progress { display:flex; gap:4px; padding:14px 14px 8px; }
+  .story-prog-bar { flex:1; height:2px; background:rgba(255,255,255,.3); border-radius:2px; overflow:hidden; }
+  .story-prog-fill { height:100%; background:#fff; transition:width 5s linear; }
+  .story-top { display:flex; align-items:center; gap:10px; padding:8px 14px; }
+  .story-user { font-size:14px; font-weight:600; color:#fff; }
+  .story-time-label { font-size:12px; color:rgba(255,255,255,.7); margin-left:4px; }
+  .story-close { margin-left:auto; background:none; border:none; color:#fff; font-size:22px; cursor:pointer; }
+  .story-content { flex:1; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .story-text { font-size:22px; font-weight:600; color:#fff; text-align:center; line-height:1.4; font-family:'DM Serif Display',serif; font-style:italic; }
+  .story-reply { padding:14px; display:flex; gap:10px; }
+  .story-reply-input {
+    flex:1; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+    border-radius:24px; padding:9px 16px; color:#fff; font-family:'DM Sans',sans-serif; font-size:13px; outline:none;
+  }
+  .story-reply-input::placeholder { color:rgba(255,255,255,.5); }
+  .story-send-btn { background:rgba(255,255,255,.2); border:none; border-radius:50%; width:38px; height:38px; color:#fff; font-size:16px; cursor:pointer; }
+
+  /* TOAST */
+  #toast {
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:var(--surface3); border:1px solid var(--border); border-radius:10px;
+    padding:10px 20px; font-size:13px; color:var(--text); z-index:900;
+    transition:transform .3s ease; white-space:nowrap; pointer-events:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align:center; padding:48px 24px; color:var(--muted); }
+  .empty-state .emoji { font-size:48px; display:block; margin-bottom:12px; }
+  .empty-state p { font-size:14px; line-height:1.6; }
+
+  .hidden { display:none !important; }
+  .loading { color:var(--muted); font-size:14px; display:flex; align-items:center; gap:8px; padding:20px; }
+  .loading::before { content:''; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* FLOATING BTN */
+  .floating-create-btn {
+    position:fixed; bottom:28px; right:28px; width:54px; height:54px;
+    border-radius:50%; background:var(--gradient); border:none; color:#fff;
+    font-size:26px; cursor:pointer; z-index:400;
+    box-shadow:0 8px 24px rgba(192,132,252,0.4); transition:transform .2s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .floating-create-btn:hover { transform:scale(1.08); }
+
+  /* PULSE ANIMATION */
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(192,132,252,0.4); }
+    70% { box-shadow: 0 0 0 14px rgba(192,132,252,0); }
+    100% { box-shadow: 0 0 0 0 rgba(192,132,252,0); }
+  }
+
+  @media (max-width:768px) {
+    .sidebar { display:none; }
+    .feed-right { display:none; }
+    .convo-list { width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Aura</div>
+    <div class="auth-tagline">Share your world, connect your aura</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <div class="auth-form" id="login-form">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="your username" autocomplete="username" />
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div class="auth-error" id="login-error"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    </div>
+    <div class="auth-form hidden" id="signup-form">
+      <div class="field-group">
+        <label>Display Name</label>
+        <input type="text" id="su-name" placeholder="Your Name" />
+      </div>
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="su-user" placeholder="username (no spaces)" />
+      </div>
+      <div class="field-group">
+        <label>Bio</label>
+        <input type="text" id="su-bio" placeholder="A short bio..." />
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="su-pass" placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <div class="auth-error" id="signup-error"></div>
+      <button class="btn-primary" onclick="doSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">Aura</div>
+    <div class="nav-item active" onclick="showPage('feed')" id="nav-feed"><span class="icon">🏠</span> Home</div>
+    <div class="nav-item" onclick="showPage('explore')" id="nav-explore"><span class="icon">🔍</span> Explore</div>
+    <div class="nav-item" onclick="showPage('notifications')" id="nav-notifications">
+      <span class="icon">🔔</span> Notifications
+      <span class="badge hidden" id="notif-badge">0</span>
+    </div>
+    <div class="nav-item" onclick="showPage('messages')" id="nav-messages">
+      <span class="icon">💬</span> Messages
+      <span class="badge hidden" id="msg-badge">0</span>
+    </div>
+    <div class="nav-item" onclick="showPage('profile')" id="nav-profile"><span class="icon">👤</span> Profile</div>
+    <div class="nav-bottom">
+      <div class="user-chip">
+        <div class="avatar" id="sidebar-avatar"></div>
+        <div class="user-info">
+          <div class="name" id="sidebar-name"></div>
+          <div class="handle" id="sidebar-handle"></div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out">↩</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- FEED -->
+    <div class="page active" id="page-feed">
+      <div class="feed-layout">
+        <div class="feed-center">
+          <div class="stories-row" id="stories-row"></div>
+          <div class="create-post">
+            <div class="create-post-top">
+              <div class="avatar sm" id="post-creator-avatar"></div>
+              <textarea class="create-post-input" id="post-input" placeholder="What's on your mind?"></textarea>
+            </div>
+            <div class="create-post-actions">
+              <button class="icon-btn" onclick="addEmojiToPost()">😊 Emoji</button>
+              <button class="icon-btn btn-primary post-btn" onclick="createPost()">Post</button>
+            </div>
+          </div>
+          <div id="posts-feed"></div>
+        </div>
+        <div class="feed-right">
+          <div class="suggestions-box">
+            <div class="suggestions-title">Who to follow</div>
+            <div id="suggestions-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPLORE -->
+    <div class="page" id="page-explore">
+      <div class="explore-wrap">
+        <input class="search-bar" placeholder="🔍  Search people..." id="search-input" oninput="doSearch(this.value)" />
+        <div id="explore-content"></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="page" id="page-notifications">
+      <div class="notif-wrap">
+        <div style="font-size:22px;font-weight:700;font-family:'DM Serif Display',serif;margin-bottom:20px;">Notifications</div>
+        <div id="notifs-list"></div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="page" id="page-messages">
+      <div class="messages-layout">
+        <div class="convo-list">
+          <div class="convo-list-header">Messages</div>
+          <div class="convo-items" id="convo-items"></div>
+        </div>
+        <div class="chat-area" id="chat-area">
+          <div class="chat-empty">
+            <div class="icon">💬</div>
+            <div>Select a conversation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="profile-wrap">
+        <div class="profile-header" id="profile-header"></div>
+        <div class="profile-posts" id="profile-posts-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STORY MODAL -->
+<div class="story-modal" id="story-modal" onclick="closeStory(event)">
+  <div class="story-view" id="story-view">
+    <div class="story-progress" id="story-progress"></div>
+    <div class="story-top">
+      <div class="avatar sm" id="story-avatar"></div>
+      <span class="story-user" id="story-username"></span>
+      <span class="story-time-label" id="story-time-label"></span>
+      <button class="story-close" onclick="closeStoryModal()">✕</button>
+    </div>
+    <div class="story-content">
+      <div class="story-text" id="story-text"></div>
+    </div>
+    <div class="story-reply">
+      <input class="story-reply-input" placeholder="Reply to story..." id="story-reply-input" />
+      <button class="story-send-btn" onclick="sendStoryReply()">➤</button>
+    </div>
+  </div>
+</div>
+
+<button class="floating-create-btn" onclick="focusPost()" title="Create post">+</button>
+
+<div id="toast"></div>
+
+<script>
+// ===================== STORAGE HELPERS =====================
+const LS = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: (k) => localStorage.removeItem(k),
+};
+
+// Keys
+const KEYS = {
+  users: 'aura_users',
+  posts: 'aura_posts',
+  stories: 'aura_stories',
+  messages: 'aura_messages',
+  notifications: 'aura_notifications',
+  currentUser: 'aura_current_user',
+};
+
+// ===================== STATE =====================
+let currentUser = null;
+let activeConvoId = null;
+let storyTimer = null;
+let pollTimer = null;
+
+// ===================== DATA ACCESS =====================
+function getUsers() { return LS.get(KEYS.users) || []; }
+function getPosts() { return LS.get(KEYS.posts) || []; }
+function getStories() { return LS.get(KEYS.stories) || []; }
+function getMessages() { return LS.get(KEYS.messages) || {}; }
+function getNotifications() { return LS.get(KEYS.notifications) || []; }
+
+function saveUsers(d) { LS.set(KEYS.users, d); }
+function savePosts(d) { LS.set(KEYS.posts, d); }
+function saveStories(d) { LS.set(KEYS.stories, d); }
+function saveMessages(d) { LS.set(KEYS.messages, d); }
+function saveNotifications(d) { LS.set(KEYS.notifications, d); }
+
+function refreshCurrentUser() {
+  if (!currentUser) return;
+  const users = getUsers();
+  const updated = users.find(u => u.id === currentUser.id);
+  if (updated) currentUser = updated;
+}
+
+function updateCurrentUserInDB() {
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === currentUser.id);
+  if (idx !== -1) { users[idx] = currentUser; saveUsers(users); }
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  return d + 'd ago';
+}
+
+function shortTime(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// ===================== AUTH =====================
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) =>
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'signup')));
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim().toLowerCase();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  const users = getUsers();
+  const user = users.find(x => x.username === u && x.password === p);
+  if (!user) { err.textContent = 'Invalid username or password.'; return; }
+  err.textContent = '';
+  loginAs(user);
+}
+
+function doSignup() {
+  const name = document.getElementById('su-name').value.trim();
+  const username = document.getElementById('su-user').value.trim().toLowerCase().replace(/\s+/g, '').replace('@', '');
+  const bio = document.getElementById('su-bio').value.trim();
+  const pass = document.getElementById('su-pass').value;
+  const err = document.getElementById('signup-error');
+  if (!name || !username || !pass) { err.textContent = 'Please fill in all required fields.'; return; }
+  if (!/^[a-z0-9_]+$/.test(username)) { err.textContent = 'Username: letters, numbers, underscores only.'; return; }
+  const users = getUsers();
+  if (users.find(x => x.username === username)) { err.textContent = 'Username already taken.'; return; }
+  const emojis = ['🌙','⚡','🌊','⭐','🎯','🎨','🌺','🦋','🚀','🌟','🎸','🧩','🌸','🔮','🦊','🐉'];
+  const newUser = {
+    id: 'u' + Date.now(),
+    name, username, password: pass,
+    bio: bio || 'New to Aura!',
+    emoji: emojis[Math.floor(Math.random() * emojis.length)],
+    followers: [],
+    following: [],
+    createdAt: Date.now(),
+  };
+  users.push(newUser);
+  saveUsers(users);
+  err.textContent = '';
+  loginAs(newUser);
+}
+
+function loginAs(user) {
+  currentUser = user;
+  LS.set(KEYS.currentUser, user.id);
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  renderSidebar();
+  showPage('feed');
+  renderMessages();
+  renderNotifications();
+  updateBadges();
+  startPolling();
+  showToast('Welcome back, ' + user.name + ' ✨');
+}
+
+function doLogout() {
+  stopPolling();
+  currentUser = null;
+  activeConvoId = null;
+  LS.del(KEYS.currentUser);
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+// Auto-login on page load
+function tryAutoLogin() {
+  const savedId = LS.get(KEYS.currentUser);
+  if (!savedId) return;
+  const users = getUsers();
+  const user = users.find(u => u.id === savedId);
+  if (user) loginAs(user);
+}
+
+// ===================== POLLING (simulates real-time) =====================
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    refreshCurrentUser();
+    updateBadges();
+    if (document.getElementById('page-messages').classList.contains('active') && activeConvoId) {
+      refreshChatMessages();
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+function updateBadges() {
+  // Notification badge
+  const notifs = getNotifications().filter(n => n.toUserId === currentUser.id && !n.read);
+  const nb = document.getElementById('notif-badge');
+  if (nb) {
+    nb.textContent = notifs.length;
+    nb.classList.toggle('hidden', notifs.length === 0);
+  }
+  // Message badge
+  const msgs = getMessages();
+  let unread = 0;
+  Object.keys(msgs).forEach(key => {
+    if (key.includes(currentUser.id)) {
+      const thread = msgs[key];
+      unread += thread.filter(m => m.to === currentUser.id && !m.read).length;
+    }
+  });
+  const mb = document.getElementById('msg-badge');
+  if (mb) {
+    mb.textContent = unread;
+    mb.classList.toggle('hidden', unread === 0);
+  }
+}
+
+// ===================== NAVIGATION =====================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  if (page === 'feed') renderFeed();
+  if (page === 'explore') renderExplore();
+  if (page === 'notifications') { markNotifsRead(); renderNotifications(); }
+  if (page === 'messages') renderMessages();
+  if (page === 'profile') renderProfile();
+}
+
+// ===================== SIDEBAR =====================
+function renderSidebar() {
+  document.getElementById('sidebar-avatar').textContent = currentUser.emoji;
+  document.getElementById('sidebar-name').textContent = currentUser.name;
+  document.getElementById('sidebar-handle').textContent = '@' + currentUser.username;
+  document.getElementById('post-creator-avatar').textContent = currentUser.emoji;
+}
+
+// ===================== FEED =====================
+function renderFeed() {
+  renderStories();
+  renderPosts();
+  renderSuggestions();
+}
+
+// ===================== STORIES =====================
+function renderStories() {
+  const row = document.getElementById('stories-row');
+  row.innerHTML = '';
+
+  // Add story button
+  const addWrap = document.createElement('div');
+  addWrap.className = 'story-add-wrap';
+  addWrap.innerHTML = `<div class="story-add-btn" onclick="addStory()">+</div><div class="story-label">Your story</div>`;
+  row.appendChild(addWrap);
+
+  const allStories = getStories();
+  // Expire stories older than 24h
+  const fresh = allStories.filter(s => Date.now() - s.createdAt < 86400000);
+  if (fresh.length !== allStories.length) saveStories(fresh);
+
+  const users = getUsers();
+  const storyUserIds = [...new Set(fresh.map(s => s.userId))];
+
+  // Put current user's story first
+  const sorted = [
+    ...storyUserIds.filter(id => id === currentUser.id),
+    ...storyUserIds.filter(id => id !== currentUser.id),
+  ];
+
+  sorted.forEach(uid => {
+    const u = users.find(x => x.id === uid);
+    if (!u) return;
+    const userStories = fresh.filter(s => s.userId === uid);
+    const allSeen = userStories.every(s => (s.seenBy || []).includes(currentUser.id));
+    const bubble = document.createElement('div');
+    bubble.className = 'story-bubble';
+    bubble.onclick = () => openStory(uid);
+    bubble.innerHTML = `
+      <div class="story-ring ${allSeen ? 'seen' : ''}">
+        <div class="story-inner">${u.emoji}</div>
+      </div>
+      <div class="story-label">${uid === currentUser.id ? 'You' : u.name.split(' ')[0]}</div>
+    `;
+    row.appendChild(bubble);
+  });
+}
+
+function addStory() {
+  const text = prompt("What's your story?");
+  if (!text || !text.trim()) return;
+  const stories = getStories();
+  stories.push({ id: 's' + Date.now(), userId: currentUser.id, text: text.trim(), createdAt: Date.now(), seenBy: [] });
+  saveStories(stories);
+  renderStories();
+  showToast('Story posted! ✨');
+}
+
+function openStory(userId) {
+  const allStories = getStories();
+  const userStories = allStories.filter(s => s.userId === userId);
+  if (!userStories.length) return;
+  const story = userStories[0];
+  const users = getUsers();
+  const u = users.find(x => x.id === userId);
+
+  // Mark seen
+  if (!(story.seenBy || []).includes(currentUser.id)) {
+    story.seenBy = [...(story.seenBy || []), currentUser.id];
+    const idx = allStories.findIndex(s => s.id === story.id);
+    if (idx !== -1) { allStories[idx] = story; saveStories(allStories); }
+  }
+
+  document.getElementById('story-avatar').textContent = u.emoji;
+  document.getElementById('story-username').textContent = u.name;
+  document.getElementById('story-time-label').textContent = timeAgo(story.createdAt);
+  document.getElementById('story-text').textContent = story.text;
+
+  const prog = document.getElementById('story-progress');
+  prog.innerHTML = userStories.map((_, i) =>
+    `<div class="story-prog-bar"><div class="story-prog-fill" id="prog-${i}" style="width:0%"></div></div>`
+  ).join('');
+  setTimeout(() => { const f = document.getElementById('prog-0'); if (f) f.style.width = '100%'; }, 50);
+
+  document.getElementById('story-modal').classList.add('open');
+  if (storyTimer) clearTimeout(storyTimer);
+  storyTimer = setTimeout(closeStoryModal, 5500);
+}
+
+function closeStory(e) { if (e.target === document.getElementById('story-modal')) closeStoryModal(); }
+function closeStoryModal() {
+  document.getElementById('story-modal').classList.remove('open');
+  if (storyTimer) clearTimeout(storyTimer);
+  renderStories();
+}
+
+function sendStoryReply() {
+  const val = document.getElementById('story-reply-input').value.trim();
+  if (!val) return;
+  document.getElementById('story-reply-input').value = '';
+  showToast('Reply sent! 💬');
+  closeStoryModal();
+}
+
+// ===================== POSTS =====================
+function renderPosts() {
+  const feed = document.getElementById('posts-feed');
+  const posts = getPosts().slice().reverse();
+  if (!posts.length) {
+    feed.innerHTML = `<div class="empty-state"><span class="emoji">🌟</span><p>No posts yet. Be the first to share something!</p></div>`;
+    return;
+  }
+  feed.innerHTML = posts.map(p => renderPostHTML(p)).join('');
+}
+
+function renderPostHTML(post) {
+  const users = getUsers();
+  const u = users.find(x => x.id === post.userId);
+  if (!u) return '';
+  const liked = (post.likes || []).includes(currentUser.id);
+  const commentsHTML = (post.comments || []).map(c => {
+    const cu = users.find(x => x.id === c.userId);
+    if (!cu) return '';
+    return `<div class="comment-item">
+      <div class="avatar sm">${cu.emoji}</div>
+      <div class="comment-content">
+        <div class="comment-author">${cu.name}</div>
+        <div class="comment-text">${escHtml(c.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="post-card" id="post-${post.id}">
+    <div class="post-header">
+      <div class="avatar">${u.emoji}</div>
+      <div class="post-meta">
+        <div class="name">${escHtml(u.name)}</div>
+        <div class="time">@${u.username} · ${timeAgo(post.createdAt)}</div>
+      </div>
+    </div>
+    <div class="post-content">${escHtml(post.text)}</div>
+    <div class="post-actions">
+      <button class="post-action-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+        ${liked ? '❤️' : '🤍'} ${(post.likes || []).length}
+      </button>
+      <button class="post-action-btn" onclick="toggleComments('${post.id}')">
+        💬 ${(post.comments || []).length}
+      </button>
+      <button class="post-action-btn" onclick="sharePost('${post.id}')">↗ Share</button>
+    </div>
+    <div class="comments-section" id="comments-${post.id}">
+      <div id="comments-list-${post.id}">${commentsHTML}</div>
+      <div class="comment-input-row">
+        <input class="comment-input" placeholder="Add a comment..." id="comment-input-${post.id}"
+          onkeydown="if(event.key==='Enter')addComment('${post.id}')" />
+        <button class="comment-submit" onclick="addComment('${post.id}')">Post</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function createPost() {
+  const input = document.getElementById('post-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const posts = getPosts();
+  const post = {
+    id: 'p' + Date.now(),
+    userId: currentUser.id,
+    text,
+    likes: [],
+    comments: [],
+    createdAt: Date.now(),
+  };
+  posts.push(post);
+  savePosts(posts);
+  input.value = '';
+  renderPosts();
+  showToast('Post published! 🚀');
+}
+
+function addEmojiToPost() {
+  const emojis = ['😊','🔥','✨','💫','🎉','❤️','🌟','🎵','🌈','🚀','🌸','💜'];
+  const e = emojis[Math.floor(Math.random() * emojis.length)];
+  const inp = document.getElementById('post-input');
+  inp.value += ' ' + e;
+  inp.focus();
+}
+
+function toggleLike(postId) {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const idx = (post.likes || []).indexOf(currentUser.id);
+  if (idx === -1) {
+    post.likes = [...(post.likes || []), currentUser.id];
+    if (post.userId !== currentUser.id) {
+      addNotification({ type: 'like', fromUserId: currentUser.id, toUserId: post.userId, postId });
+    }
+  } else {
+    post.likes.splice(idx, 1);
+  }
+  savePosts(posts);
+  // Re-render just this card
+  const el = document.getElementById('post-' + postId);
+  if (el) { const tmp = document.createElement('div'); tmp.innerHTML = renderPostHTML(post); el.replaceWith(tmp.firstChild); }
+}
+
+function toggleComments(postId) {
+  const sec = document.getElementById('comments-' + postId);
+  if (sec) sec.classList.toggle('open');
+}
+
+function addComment(postId) {
+  const input = document.getElementById('comment-input-' + postId);
+  const text = input.value.trim();
+  if (!text) return;
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  post.comments = [...(post.comments || []), { userId: currentUser.id, text, createdAt: Date.now() }];
+  savePosts(posts);
+  input.value = '';
+  if (post.userId !== currentUser.id) {
+    addNotification({ type: 'comment', fromUserId: currentUser.id, toUserId: post.userId, postId, text });
+  }
+  // Append to list
+  const list = document.getElementById('comments-list-' + postId);
+  if (list) {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `<div class="avatar sm">${currentUser.emoji}</div>
+      <div class="comment-content">
+        <div class="comment-author">${escHtml(currentUser.name)}</div>
+        <div class="comment-text">${escHtml(text)}</div>
+      </div>`;
+    list.appendChild(div);
+  }
+  const btn = document.querySelector(`#post-${postId} .post-action-btn:nth-child(2)`);
+  if (btn) btn.textContent = '💬 ' + post.comments.length;
+  showToast('Comment posted!');
+}
+
+function sharePost(postId) { showToast('Link copied! 🔗'); }
+
+// ===================== SUGGESTIONS =====================
+function renderSuggestions() {
+  const list = document.getElementById('suggestions-list');
+  refreshCurrentUser();
+  const users = getUsers().filter(u => u.id !== currentUser.id && !(currentUser.following || []).includes(u.id));
+  if (!users.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px">You\'re following everyone! 🎉</div>';
+    return;
+  }
+  list.innerHTML = users.slice(0, 5).map(u => `
+    <div class="suggest-item">
+      <div class="avatar sm">${u.emoji}</div>
+      <div class="suggest-info">
+        <div class="name">${escHtml(u.name)}</div>
+        <div class="bio">${escHtml(u.bio || '')}</div>
+      </div>
+      <button class="follow-btn" onclick="toggleFollow('${u.id}', this)">${(currentUser.following || []).includes(u.id) ? 'Following' : 'Follow'}</button>
+    </div>
+  `).join('');
+}
+
+function toggleFollow(userId, btn) {
+  refreshCurrentUser();
+  const users = getUsers();
+  const u = users.find(x => x.id === userId);
+  if (!u) return;
+  const meIdx = users.findIndex(x => x.id === currentUser.id);
+  const theyIdx = users.findIndex(x => x.id === userId);
+
+  const alreadyFollowing = (currentUser.following || []).includes(userId);
+  if (!alreadyFollowing) {
+    users[meIdx].following = [...(users[meIdx].following || []), userId];
+    users[theyIdx].followers = [...(users[theyIdx].followers || []), currentUser.id];
+    addNotification({ type: 'follow', fromUserId: currentUser.id, toUserId: userId });
+    showToast('Following ' + u.name + ' ✨');
+    if (btn) { btn.textContent = 'Following'; btn.classList.add('following'); }
+  } else {
+    users[meIdx].following = (users[meIdx].following || []).filter(id => id !== userId);
+    users[theyIdx].followers = (users[theyIdx].followers || []).filter(id => id !== currentUser.id);
+    showToast('Unfollowed ' + u.name);
+    if (btn) { btn.textContent = 'Follow'; btn.classList.remove('following'); }
+  }
+  saveUsers(users);
+  currentUser = users[meIdx];
+  renderSuggestions();
+  renderProfile();
+}
+
+// ===================== EXPLORE =====================
+function renderExplore() {
+  document.getElementById('search-input').value = '';
+  doSearch('');
+}
+
+function doSearch(q) {
+  const cont = document.getElementById('explore-content');
+  const users = getUsers().filter(u => u.id !== currentUser.id);
+  if (!q.trim()) {
+    if (!users.length) {
+      cont.innerHTML = `<div class="empty-state"><span class="emoji">🔍</span><p>No other users yet.<br>Share Aura with friends!</p></div>`;
+      return;
+    }
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13px;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">All users</div>' +
+      users.map(u => userResultHTML(u)).join('');
+    return;
+  }
+  const results = users.filter(u =>
+    u.name.toLowerCase().includes(q.toLowerCase()) || u.username.toLowerCase().includes(q.toLowerCase())
+  );
+  cont.innerHTML = results.length
+    ? results.map(u => userResultHTML(u)).join('')
+    : `<div class="empty-state"><span class="emoji">😶</span><p>No users found for "<strong>${escHtml(q)}</strong>"</p></div>`;
+}
+
+function userResultHTML(u) {
+  refreshCurrentUser();
+  const isFollowing = (currentUser.following || []).includes(u.id);
+  return `<div class="user-result">
+    <div class="avatar">${u.emoji}</div>
+    <div class="info" style="flex:1">
+      <div class="name">${escHtml(u.name)}</div>
+      <div class="handle">@${u.username} · ${(u.followers || []).length} followers</div>
+    </div>
+    <button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="toggleFollow('${u.id}', this)">${isFollowing ? 'Following' : 'Follow'}</button>
+  </div>`;
+}
+
+// ===================== NOTIFICATIONS =====================
+function addNotification(data) {
+  const notifs = getNotifications();
+  notifs.unshift({ id: 'n' + Date.now(), ...data, createdAt: Date.now(), read: false });
+  saveNotifications(notifs);
+}
+
+function markNotifsRead() {
+  const notifs = getNotifications();
+  let changed = false;
+  notifs.forEach(n => { if (n.toUserId === currentUser.id && !n.read) { n.read = true; changed = true; } });
+  if (changed) saveNotifications(notifs);
+  updateBadges();
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notifs-list');
+  const notifs = getNotifications().filter(n => n.toUserId === currentUser.id);
+  const users = getUsers();
+  const icons = { like: '❤️', follow: '👤', comment: '💬' };
+  const msgs = {
+    like: n => { const u = users.find(x => x.id === n.fromUserId); return u ? `<span class="bold">${escHtml(u.name)}</span> liked your post` : ''; },
+    follow: n => { const u = users.find(x => x.id === n.fromUserId); return u ? `<span class="bold">${escHtml(u.name)}</span> started following you` : ''; },
+    comment: n => { const u = users.find(x => x.id === n.fromUserId); return u ? `<span class="bold">${escHtml(u.name)}</span> commented: "${escHtml(n.text || '')}"` : ''; },
+  };
+  if (!notifs.length) {
+    list.innerHTML = `<div class="empty-state"><span class="emoji">🔔</span><p>No notifications yet.<br>Interact with others to see activity here!</p></div>`;
+    return;
+  }
+  list.innerHTML = notifs.map(n => `
+    <div class="notif-item" style="${!n.read ? 'border-color:rgba(192,132,252,0.3)' : ''}">
+      <div class="notif-icon">${icons[n.type] || '🔔'}</div>
+      <div class="notif-text">${msgs[n.type]?.(n) || n.type}</div>
+      <div class="notif-time">${timeAgo(n.createdAt)}</div>
+    </div>
+  `).join('');
+}
+
+// ===================== MESSAGES =====================
+function getConvoKey(a, b) { return [a, b].sort().join('__'); }
+
+function renderMessages() {
+  refreshCurrentUser();
+  const items = document.getElementById('convo-items');
+  const users = getUsers().filter(u => u.id !== currentUser.id);
+  const msgs = getMessages();
+
+  // Show all users as potential conversations, sorted by last message
+  const withMsg = [], withoutMsg = [];
+  users.forEach(u => {
+    const key = getConvoKey(currentUser.id, u.id);
+    const thread = msgs[key] || [];
+    if (thread.length) withMsg.push({ u, thread, last: thread[thread.length - 1] });
+    else withoutMsg.push({ u, thread: [], last: null });
+  });
+  withMsg.sort((a, b) => b.last.createdAt - a.last.createdAt);
+
+  const all = [...withMsg, ...withoutMsg];
+
+  if (!all.length) {
+    items.innerHTML = `<div class="empty-state"><span class="emoji">💬</span><p>No other users yet.</p></div>`;
+    return;
+  }
+
+  items.innerHTML = all.map(({ u, thread, last }) => {
+    const key = getConvoKey(currentUser.id, u.id);
+    const unread = thread.filter(m => m.to === currentUser.id && !m.read).length;
+    return `<div class="convo-item ${activeConvoId === u.id ? 'active' : ''}" id="convo-${u.id}" onclick="openChat('${u.id}')">
+      <div class="avatar sm">${u.emoji}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="name">${escHtml(u.name)}</div>
+        <div class="preview">${last ? escHtml(last.text) : 'Say hi!'}</div>
+      </div>
+      ${unread ? `<div class="convo-unread"></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function openChat(userId) {
+  activeConvoId = userId;
+  document.querySelectorAll('.convo-item').forEach(i => i.classList.remove('active'));
+  const ci = document.getElementById('convo-' + userId);
+  if (ci) ci.classList.add('active');
+
+  const users = getUsers();
+  const u = users.find(x => x.id === userId);
+  const key = getConvoKey(currentUser.id, userId);
+  const msgs = getMessages();
+  if (!msgs[key]) msgs[key] = [];
+
+  // Mark messages as read
+  msgs[key].forEach(m => { if (m.to === currentUser.id) m.read = true; });
+  saveMessages(msgs);
+  updateBadges();
+
+  const thread = msgs[key];
+  const area = document.getElementById('chat-area');
+  area.innerHTML = `
+    <div class="chat-header">
+      <div class="avatar sm">${u.emoji}</div>
+      <div>
+        <div style="font-size:15px;font-weight:600">${escHtml(u.name)}</div>
+        <div style="font-size:12px;color:var(--muted)">@${u.username}</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      ${thread.map(m => msgBubbleHTML(m)).join('')}
+    </div>
+    <div class="chat-input-area">
+      <input class="chat-input" placeholder="Send a message..." id="chat-input"
+        onkeydown="if(event.key==='Enter')sendMessage()" />
+      <button class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  `;
+  scrollChat();
+}
+
+function msgBubbleHTML(m) {
+  const mine = m.from === currentUser.id;
+  return `<div class="msg-bubble ${mine ? 'mine' : ''}">
+    <div class="bubble-inner">${escHtml(m.text)}</div>
+    <div class="bubble-time">${shortTime(m.createdAt)}</div>
+  </div>`;
+}
+
+function refreshChatMessages() {
+  if (!activeConvoId) return;
+  const msgs = getMessages();
+  const key = getConvoKey(currentUser.id, activeConvoId);
+  const thread = msgs[key] || [];
+
+  // Mark read
+  let changed = false;
+  thread.forEach(m => { if (m.to === currentUser.id && !m.read) { m.read = true; changed = true; } });
+  if (changed) { saveMessages(msgs); updateBadges(); }
+
+  const cm = document.getElementById('chat-messages');
+  if (!cm) return;
+  const currentCount = cm.children.length;
+  if (thread.length > currentCount) {
+    // Append new messages only
+    const newMsgs = thread.slice(currentCount);
+    newMsgs.forEach(m => {
+      const div = document.createElement('div');
+      div.innerHTML = msgBubbleHTML(m);
+      cm.appendChild(div.firstChild);
+    });
+    scrollChat();
+    renderMessages();
+  }
+}
+
+function sendMessage() {
+  if (!activeConvoId) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const key = getConvoKey(currentUser.id, activeConvoId);
+  const msgs = getMessages();
+  if (!msgs[key]) msgs[key] = [];
+
+  const msg = { id: 'm' + Date.now(), from: currentUser.id, to: activeConvoId, text, createdAt: Date.now(), read: false };
+  msgs[key].push(msg);
+  saveMessages(msgs);
+  input.value = '';
+
+  const cm = document.getElementById('chat-messages');
+  if (cm) {
+    const div = document.createElement('div');
+    div.innerHTML = msgBubbleHTML(msg);
+    cm.appendChild(div.firstChild);
+    scrollChat();
+  }
+  renderMessages();
+}
+
+function scrollChat() {
+  const cm = document.getElementById('chat-messages');
+  if (cm) cm.scrollTop = cm.scrollHeight;
+}
+
+// ===================== PROFILE =====================
+function renderProfile() {
+  refreshCurrentUser();
+  const u = currentUser;
+  const myPosts = getPosts().filter(p => p.userId === u.id);
+
+  document.getElementById('profile-header').innerHTML = `
+    <div class="avatar xl">${u.emoji}</div>
+    <div class="profile-info">
+      <div class="uname">${escHtml(u.name)}</div>
+      <div class="handle">@${u.username}</div>
+      <div class="bio">${escHtml(u.bio || '')}</div>
+      <div class="profile-stats">
+        <div class="stat"><div class="n">${myPosts.length}</div><div class="l">Posts</div></div>
+        <div class="stat"><div class="n">${(u.followers || []).length}</div><div class="l">Followers</div></div>
+        <div class="stat"><div class="n">${(u.following || []).length}</div><div class="l">Following</div></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px">
+        <button class="edit-profile-btn" onclick="editProfile()">Edit Profile</button>
+        <button class="edit-profile-btn" onclick="addStory()">+ Add Story</button>
+      </div>
+    </div>
+  `;
+
+  const grid = document.getElementById('profile-posts-grid');
+  grid.innerHTML = myPosts.length
+    ? myPosts.slice().reverse().map(p => `
+        <div class="profile-post-tile" title="${escHtml(p.text)}">
+          <span style="font-size:13px;padding:8px;text-align:center;color:var(--muted);word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${escHtml(p.text)}</span>
+          <div style="position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,.6)">❤️ ${(p.likes || []).length}</div>
+        </div>
+      `).join('')
+    : '<div style="color:var(--muted);font-size:14px;padding:24px;grid-column:1/-1">No posts yet. Share something!</div>';
+}
+
+function editProfile() {
+  const name = prompt('Display name:', currentUser.name);
+  if (name && name.trim()) currentUser.name = name.trim();
+  const bio = prompt('Bio:', currentUser.bio);
+  if (bio !== null) currentUser.bio = bio;
+  updateCurrentUserInDB();
+  renderProfile();
+  renderSidebar();
+  showToast('Profile updated! ✨');
+}
+
+// ===================== UTILS =====================
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function focusPost() {
+  showPage('feed');
+  setTimeout(() => { const b = document.getElementById('post-input'); if (b) b.focus(); }, 150);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===================== KEYBOARD =====================
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('su-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+
+// ===================== INIT =====================
+tryAutoLogin();
+</script>
+</body>
+</html>
