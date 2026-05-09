@@ -12,8 +12,5 @@ app.use(express.json());
 // Routes
 app.use("/posts", postRoutes);
 
-app.get("/", (req, res) => {
-  res.json({ message: "🚀 Social backend running" });
-});
-
+app.get("/", (req, res) => 
 const PORT = process.env.PORT 
