@@ -9,8 +9,4 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/posts", postRoutes);
-
-app.get("/", (req, res) => 
-const PORT = process.env.PORT 
+// ocess.env.PORT 
